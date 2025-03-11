@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  role          Role      @default(USER)
+  company       String?
+  phone         String?
+  country       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  inquiries     Inquiry[]
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// 产品分类
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  slug        String    @unique
+  image       String?
+  parentId    String?
+  parent      Category? @relation("CategoryToSubcategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryToSubcategory")
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 产品模型
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  slug        String    @unique
+  price       Float?
+  minOrder    Int?      // 最小订购量
+  images      String[]
+  isPublished Boolean   @default(true)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  features    Json?     // 产品特点，存储为JSON
+  specifications Json?  // 产品规格，存储为JSON
+  priceTiers  PriceTier[]
+  inquiries   Inquiry[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 批发价格层级
+model PriceTier {
+  id          String    @id @default(cuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  minQuantity Int       // 最小数量
+  price       Float     // 该数量级的价格
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 询价模型
+model Inquiry {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int
+  message     String?   @db.Text
+  status      InquiryStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum InquiryStatus {
+  PENDING
+  RESPONDED
+  CLOSED
+}
+
+// 系统设置
+model Setting {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  value       String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
