@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ColorfulCard
 
-## Getting Started
+一个基于Next.js开发的现代电子贺卡和产品展示平台。
 
-First, run the development server:
+## 项目概述
 
+ColorfulCard是一个专注于数字贺卡和定制产品的在线平台，让用户可以浏览、询价和购买创意数字内容。
+
+## 技术栈
+
+- **前端**：Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- **后端**：Next.js API Routes, Prisma ORM
+- **数据库**：可配置（默认SQLite用于开发）
+- **认证**：NextAuth.js
+
+## 功能特点
+
+- 响应式设计，适配各种设备
+- 产品分类与搜索
+- 用户认证系统
+- 产品详情展示
+- 在线询价系统
+- 管理员面板
+  - 产品管理
+  - 分类管理
+  - 用户管理
+  - 询价处理
+  - 数据统计
+
+## 快速开始
+
+### 环境要求
+
+- Node.js 18.17.0 或更高版本
+- npm 或 yarn 或 pnpm
+
+### 安装与运行
+
+1. 克隆仓库
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Twritetime/colorfulcard.git
+cd colorfulcard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 安装依赖
+```bash
+npm install
+# 或
+yarn install
+# 或
+pnpm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 配置环境变量
+复制`.env.example`文件为`.env`并更新必要的配置。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. 初始化数据库
+```bash
+npx prisma migrate dev
+```
 
-## Learn More
+5. 运行开发服务器
+```bash
+npm run dev
+# 或
+yarn dev
+# 或
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. 在浏览器中访问 [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 部署
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+项目可以部署在Vercel、Netlify或其他支持Next.js的平台上。
 
-## Deploy on Vercel
+## 许可
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[MIT](LICENSE)
