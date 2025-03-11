@@ -1,36 +1,39 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
-import { db } from '@/lib/db';
+import { sql, db } from '@/lib/db';
+import { users, products, categories } from '@/lib/mock-db';
 
 // 使用Neon serverless驱动直接连接
 export async function GET() {
   try {
-    // 使用Neon驱动
-    const sql = neon(process.env.POSTGRES_URL_NON_POOLING!);
-    
-    // 简单查询示例
+    // 使用模拟SQL查询
     const testQuery = await sql`SELECT version();`;
     
-    // 使用Prisma查询示例（如果表已存在）
-    let userCount = 0;
-    try {
-      userCount = await db.user.count();
-    } catch (error) {
-      console.log('Prisma查询可能失败，数据表可能尚未创建');
-    }
+    // 使用模拟数据库查询
+    const userCount = await db.user.count();
+    const productCount = await db.product.count();
+    const categoryCount = await db.category.count();
     
     return NextResponse.json({
       success: true,
-      message: '数据库连接成功',
+      message: '模拟数据库连接成功',
       neonResult: testQuery,
-      userCount,
+      counts: {
+        users: userCount,
+        products: productCount,
+        categories: categoryCount
+      },
+      sampleData: {
+        users: users.slice(0, 1),
+        products: products.slice(0, 1),
+        categories: categories.slice(0, 1)
+      }
     });
   } catch (error: any) {
-    console.error('数据库连接错误:', error);
+    console.error('模拟数据库查询错误:', error);
     return NextResponse.json(
       {
         success: false,
-        message: '数据库连接失败',
+        message: '模拟数据库查询失败',
         error: error.message,
       },
       { status: 500 }

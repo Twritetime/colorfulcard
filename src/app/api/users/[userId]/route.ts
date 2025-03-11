@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { users } from "@/lib/mock-db";
 
 interface RouteParams {
   params: {
@@ -21,18 +21,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { id: params.userId },
-      select: {
-        id: true,
-        email: true,
-        company: true,
-        phone: true,
-        country: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = users.find(u => u.id === params.userId);
 
     if (!user) {
       return NextResponse.json(
@@ -41,7 +30,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json(user);
+    const { password, ...userWithoutPassword } = user;
+    return NextResponse.json(userWithoutPassword);
   } catch (error) {
     return NextResponse.json(
       { error: "获取用户详情失败" },
@@ -70,10 +60,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    await db.user.delete({
-      where: { id: params.userId },
-    });
-
+    // 在mock数据中，我们不实际删除用户
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(

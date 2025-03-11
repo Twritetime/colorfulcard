@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { inquiries, products } from "@/lib/mock-db";
 import { inquirySchema } from "@/lib/validations";
 
 // 获取询盘列表 (仅管理员)
@@ -23,40 +23,25 @@ export async function GET(request: Request) {
 
     const skip = (page - 1) * limit;
 
-    // 构建查询条件
-    const where = {
-      ...(status && { status }),
-    };
+    // 过滤询盘
+    let filteredInquiries = inquiries;
+    if (status) {
+      filteredInquiries = inquiries.filter(i => i.status === status);
+    }
 
-    // 获取询盘总数
-    const total = await db.inquiry.count({ where });
+    const total = filteredInquiries.length;
 
     // 获取询盘列表
-    const inquiries = await db.inquiry.findMany({
-      where,
-      include: {
-        product: {
-          select: {
-            name: true,
-            id: true,
-          },
-        },
-        messages: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 1,
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip,
-      take: limit,
-    });
+    const paginatedInquiries = filteredInquiries
+      .slice(skip, skip + limit)
+      .map(inquiry => ({
+        ...inquiry,
+        product: products.find(p => p.id === inquiry.productId),
+        messages: inquiry.messages.slice(-1),
+      }));
 
     return NextResponse.json({
-      inquiries,
+      inquiries: paginatedInquiries,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -76,9 +61,7 @@ export async function POST(request: Request) {
     const body = inquirySchema.parse(json);
 
     // 验证产品是否存在
-    const product = await db.product.findUnique({
-      where: { id: body.productId },
-    });
+    const product = products.find(p => p.id === body.productId);
 
     if (!product) {
       return NextResponse.json(
@@ -88,33 +71,31 @@ export async function POST(request: Request) {
     }
 
     // 创建询盘
-    const inquiry = await db.inquiry.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        quantity: body.quantity,
-        status: "pending", // 默认状态为待处理
-        productId: body.productId,
-        messages: {
-          create: {
-            content: body.message,
-            sender: "customer", // 默认是客户发送的消息
-          },
+    const mockInquiry = {
+      id: String(inquiries.length + 1),
+      name: body.name,
+      email: body.email,
+      quantity: body.quantity,
+      status: "pending",
+      productId: body.productId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      messages: [
+        {
+          id: "1",
+          content: body.message,
+          sender: "customer",
+          inquiryId: String(inquiries.length + 1),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
+      ],
+      product: {
+        name: product.name,
       },
-      include: {
-        product: {
-          select: {
-            name: true,
-          },
-        },
-        messages: true,
-      },
-    });
+    };
 
-    // 可以在这里添加发送邮件通知管理员的逻辑
-
-    return NextResponse.json({ success: true, inquiry });
+    return NextResponse.json({ success: true, inquiry: mockInquiry });
   } catch (error) {
     if (error.name === "ZodError") {
       return NextResponse.json(

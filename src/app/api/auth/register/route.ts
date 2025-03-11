@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcrypt";
-import { db } from "@/lib/db";
+import { users } from "@/lib/mock-db";
 
 export async function POST(req: Request) {
   try {
@@ -16,11 +16,7 @@ export async function POST(req: Request) {
     }
 
     // 检查邮箱是否已被注册
-    const existingUser = await db.user.findUnique({
-      where: {
-        email,
-      },
-    });
+    const existingUser = users.find(u => u.email === email);
 
     if (existingUser) {
       return NextResponse.json(
@@ -31,19 +27,21 @@ export async function POST(req: Request) {
 
     // 创建新用户
     const hashedPassword = await hash(password, 10);
-    const user = await db.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        company,
-        phone,
-        country,
-      },
-    });
+    const mockUser = {
+      id: String(users.length + 1),
+      name,
+      email,
+      password: hashedPassword,
+      company,
+      phone,
+      country,
+      role: "USER",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     // 返回用户信息（不包含密码）
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = mockUser;
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
     console.error("注册失败:", error);

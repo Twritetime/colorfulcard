@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcrypt";
-import { db } from "@/lib/db";
+import { users } from "@/lib/mock-db";
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -23,11 +23,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await db.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
+        const user = users.find(u => u.email === credentials.email);
 
         if (!user) {
           return null;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { users, products, categories, inquiries } from "@/lib/mock-db";
 
 export async function GET() {
   try {
@@ -14,17 +14,11 @@ export async function GET() {
       );
     }
     
-    // 获取产品数量
-    const productsCount = await db.product.count();
-    
-    // 获取分类数量
-    const categoriesCount = await db.category.count();
-    
-    // 获取用户数量
-    const usersCount = await db.user.count();
-    
-    // 获取询盘数量
-    const inquiriesCount = await db.inquiry.count();
+    // 获取各项统计数据
+    const productsCount = products.length;
+    const categoriesCount = categories.length;
+    const usersCount = users.length;
+    const inquiriesCount = inquiries.length;
     
     return NextResponse.json({
       productsCount,

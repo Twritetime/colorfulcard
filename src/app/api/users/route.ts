@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { users } from "@/lib/mock-db";
 
 // 获取用户列表
 export async function GET(request: Request) {
@@ -20,30 +21,15 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "10");
 
     const skip = (page - 1) * limit;
-
-    // 获取用户总数
-    const total = await db.user.count();
+    const total = users.length;
 
     // 获取用户列表
-    const users = await db.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        company: true,
-        phone: true,
-        country: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const paginatedUsers = users
+      .slice(skip, skip + limit)
+      .map(({ password, ...user }) => user);
 
     return NextResponse.json({
-      users,
+      users: paginatedUsers,
       total,
       page,
       totalPages: Math.ceil(total / limit),

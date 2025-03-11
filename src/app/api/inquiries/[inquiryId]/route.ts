@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { inquiries, products } from "@/lib/mock-db";
 
 interface RouteParams {
   params: {
@@ -21,17 +21,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    const inquiry = await db.inquiry.findUnique({
-      where: { id: params.inquiryId },
-      include: {
-        product: true,
-        messages: {
-          orderBy: {
-            createdAt: "asc",
-          },
-        },
-      },
-    });
+    const inquiry = inquiries.find(i => i.id === params.inquiryId);
 
     if (!inquiry) {
       return NextResponse.json(
@@ -40,7 +30,15 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json(inquiry);
+    const inquiryWithProduct = {
+      ...inquiry,
+      product: products.find(p => p.id === inquiry.productId),
+      messages: inquiry.messages.sort((a, b) => 
+        a.createdAt.getTime() - b.createdAt.getTime()
+      ),
+    };
+
+    return NextResponse.json(inquiryWithProduct);
   } catch (error) {
     return NextResponse.json(
       { error: "获取询盘详情失败" },
@@ -71,12 +69,22 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const inquiry = await db.inquiry.update({
-      where: { id: params.inquiryId },
-      data: { status },
-    });
+    const inquiry = inquiries.find(i => i.id === params.inquiryId);
 
-    return NextResponse.json(inquiry);
+    if (!inquiry) {
+      return NextResponse.json(
+        { error: "询盘不存在" },
+        { status: 404 }
+      );
+    }
+
+    const updatedInquiry = {
+      ...inquiry,
+      status,
+      updatedAt: new Date(),
+    };
+
+    return NextResponse.json(updatedInquiry);
   } catch (error) {
     return NextResponse.json(
       { error: "更新询盘状态失败" },

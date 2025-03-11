@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { inquiries } from "@/lib/mock-db";
 import { z } from "zod";
 
 interface RouteParams {
@@ -24,6 +24,15 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
     
+    const inquiry = inquiries.find(i => i.id === params.inquiryId);
+
+    if (!inquiry) {
+      return NextResponse.json(
+        { error: "询盘不存在" },
+        { status: 404 }
+      );
+    }
+
     // 如果不是管理员，则需要验证email是否匹配询盘的email
     if (!session?.user) {
       if (!email) {
@@ -33,12 +42,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         );
       }
 
-      const inquiry = await db.inquiry.findUnique({
-        where: { id: params.inquiryId },
-        select: { email: true },
-      });
-
-      if (!inquiry || inquiry.email !== email) {
+      if (inquiry.email !== email) {
         return NextResponse.json(
           { error: "未授权访问" },
           { status: 401 }
@@ -46,12 +50,9 @@ export async function GET(request: Request, { params }: RouteParams) {
       }
     }
 
-    const messages = await db.inquiryMessage.findMany({
-      where: { inquiryId: params.inquiryId },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
+    const messages = inquiry.messages.sort((a, b) => 
+      a.createdAt.getTime() - b.createdAt.getTime()
+    );
 
     return NextResponse.json(messages);
   } catch (error) {
@@ -70,6 +71,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     
     const session = await getServerSession(authOptions);
     
+    const inquiry = inquiries.find(i => i.id === params.inquiryId);
+
+    if (!inquiry) {
+      return NextResponse.json(
+        { error: "询盘不存在" },
+        { status: 404 }
+      );
+    }
+
     // 如果发送者是管理员，必须是已登录的用户
     if (sender === "admin" && !session?.user) {
       return NextResponse.json(
@@ -89,12 +99,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         );
       }
       
-      const inquiry = await db.inquiry.findUnique({
-        where: { id: params.inquiryId },
-        select: { email: true },
-      });
-      
-      if (!inquiry || inquiry.email !== email) {
+      if (inquiry.email !== email) {
         return NextResponse.json(
           { error: "电子邮箱不匹配" },
           { status: 401 }
@@ -102,36 +107,23 @@ export async function POST(request: Request, { params }: RouteParams) {
       }
     }
 
-    // 验证询盘是否存在
-    const inquiry = await db.inquiry.findUnique({
-      where: { id: params.inquiryId },
-    });
-
-    if (!inquiry) {
-      return NextResponse.json(
-        { error: "询盘不存在" },
-        { status: 404 }
-      );
-    }
-
     // 创建新消息
-    const message = await db.inquiryMessage.create({
-      data: {
-        content,
-        sender,
-        inquiryId: params.inquiryId,
-      },
-    });
+    const mockMessage = {
+      id: String(inquiry.messages.length + 1),
+      content,
+      sender,
+      inquiryId: params.inquiryId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     // 如果询盘状态是待处理，且这是管理员的回复，则更新状态为处理中
     if (inquiry.status === "pending" && sender === "admin") {
-      await db.inquiry.update({
-        where: { id: params.inquiryId },
-        data: { status: "processing" },
-      });
+      inquiry.status = "processing";
+      inquiry.updatedAt = new Date();
     }
 
-    return NextResponse.json(message);
+    return NextResponse.json(mockMessage);
   } catch (error) {
     if (error.name === "ZodError") {
       return NextResponse.json(

@@ -1,17 +1,10 @@
-import { PrismaClient } from "@prisma/client";
-import { neon } from "@neondatabase/serverless";
+import mockDb from './mock-db';
 
-declare global {
-  var prisma: PrismaClient | undefined;
-  var neonClient: ReturnType<typeof neon> | undefined;
-}
+// 导出模拟数据库作为db对象
+export const db = mockDb;
 
-export const db = globalThis.prisma || new PrismaClient();
-
-// 直接使用Neon驱动的SQL客户端（在需要原始SQL时使用）
-export const sql = globalThis.neonClient || neon(process.env.POSTGRES_URL_NON_POOLING!);
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = db;
-  globalThis.neonClient = sql;
-} 
+// 模拟SQL函数
+export const sql = async (query: string, ...params: any[]) => {
+  console.log('模拟SQL查询:', query, params);
+  return [{ version: 'Mock Database 1.0' }];
+}; 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { categories } from "@/lib/mock-db";
 import { categorySchema } from "@/lib/validations";
 
 interface RouteParams {
@@ -13,12 +13,7 @@ interface RouteParams {
 // 获取单个分类
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    const category = await db.category.findUnique({
-      where: { id: params.categoryId },
-      include: {
-        parent: true,
-      },
-    });
+    const category = categories.find(c => c.id === params.categoryId);
 
     if (!category) {
       return NextResponse.json(
@@ -27,7 +22,12 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json(category);
+    const categoryWithParent = {
+      ...category,
+      parent: categories.find(c => c.id === category.parentId),
+    };
+
+    return NextResponse.json(categoryWithParent);
   } catch (error) {
     return NextResponse.json(
       { error: "获取分类详情失败" },
@@ -59,16 +59,25 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const category = await db.category.update({
-      where: { id: params.categoryId },
-      data: {
-        ...(body.name && { name: body.name }),
-        ...(body.description && { description: body.description }),
-        ...(body.parentId !== undefined && { parentId: body.parentId }),
-      },
-    });
+    // 在mock数据中，我们只返回更新后的模拟数据
+    const category = categories.find(c => c.id === params.categoryId);
+    
+    if (!category) {
+      return NextResponse.json(
+        { error: "分类不存在" },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json(category);
+    const updatedCategory = {
+      ...category,
+      ...(body.name && { name: body.name }),
+      ...(body.description && { description: body.description }),
+      ...(body.parentId !== undefined && { parentId: body.parentId }),
+      updatedAt: new Date(),
+    };
+
+    return NextResponse.json(updatedCategory);
   } catch (error) {
     if (error.code === "P2002") {
       return NextResponse.json(
@@ -96,34 +105,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    // 检查分类是否有关联的产品
-    const productsCount = await db.product.count({
-      where: { categoryId: params.categoryId },
-    });
-
-    if (productsCount > 0) {
-      return NextResponse.json(
-        { error: "该分类下有关联的产品，无法删除" },
-        { status: 400 }
-      );
-    }
-
-    // 检查分类是否有子分类
-    const childrenCount = await db.category.count({
-      where: { parentId: params.categoryId },
-    });
-
-    if (childrenCount > 0) {
-      return NextResponse.json(
-        { error: "该分类有子分类，无法删除" },
-        { status: 400 }
-      );
-    }
-
-    await db.category.delete({
-      where: { id: params.categoryId },
-    });
-
+    // 在mock数据中，我们只返回成功响应
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
