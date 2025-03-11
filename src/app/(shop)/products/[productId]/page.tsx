@@ -66,8 +66,9 @@ const mockProducts = [
   },
 ];
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = mockProducts.find((p) => p.slug === params.slug);
+export default function ProductPage({ params }: { params: { productId: string } }) {
+  // 使用productId查找产品，这里假设productId就是mockProducts中的id
+  const product = mockProducts.find((p) => p.id === params.productId);
   
   if (!product) {
     notFound();
