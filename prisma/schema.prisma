@@ -10,7 +10,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("POSTGRES_PRISMA_URL") // 使用连接池的URL
+  directUrl = env("POSTGRES_URL_NON_POOLING") // 用于直接连接（比如数据库迁移）
 }
 
 // 用户模型
